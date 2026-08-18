@@ -1,0 +1,16 @@
+{
+    "cSpell.words": [
+        "databind",
+        "fasterxml"
+    ],
+    "intellij.buildTool": "",
+    "editor.semanticHighlighting.enabled": true,
+    "editor.semanticTokenColorCustomizations": {
+        "rules": {
+            "function:kotlin": "#DCDCAA",
+            "function.declaration:kotlin": "#DCDCAA",
+            "method:kotlin": "#DCDCAA",
+            "method.declaration:kotlin": "#DCDCAA"
+        }
+    }
+}
