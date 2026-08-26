@@ -7,8 +7,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.momos.mouseandroid.MouseAccessibilityService
 import data.MouseData
 import interfaces.AccessibilityStateStore
+import interfaces.CallSendData
+import android.os.SystemClock
+import kotlin.math.abs
 
-class MouseCommandProcessor {
+class MouseCommandProcessor(val callSendData: CallSendData) {
     private var service: MouseAccessibilityService? = null
     private val mapper = ObjectMapper()
     private var dataType: DataType? = null
@@ -20,8 +23,14 @@ class MouseCommandProcessor {
     private var haveMouse: Boolean = false
     private var justGetMouse = false
     private var wallType = WallType.EAST
-    private val wallRange: Int = 5
-
+    private val wallRange: Int = 10
+    private val returnIgnoreMillis = 100L
+    @Volatile
+    private var ignoreMoveUntil = SystemClock.elapsedRealtime()
+    private var tapTime = SystemClock.elapsedRealtime()
+    private var leftClicked = false
+    private var tapX = 0
+    private var tapY = 0
 
     fun serviceConnect() {
         val screenSize = AccessibilityStateStore.getScreenSize()
@@ -48,29 +57,57 @@ class MouseCommandProcessor {
         when (dataType) {
             DataType.MOUSE -> {
                 mouseData = mapper.treeToValue(receiveData.data, MouseData::class.java)
+                val mouseEventType = mouseData.getMouseEventType()
 
-                when (mouseData.getMouseEventType()) {
-                    MouseEventType.MOVE -> move()
+                if (mouseEventType == MouseEventType.MOVE &&
+                    SystemClock.elapsedRealtime() < ignoreMoveUntil
+                ) {
+                    return
+                }
+
+                when (mouseEventType) {
+                    MouseEventType.MOVE -> {
+                        if(leftClicked){
+                            draw()
+                        }else{
+                            move()
+                        }
+                    }
+
+
                     MouseEventType.LEFTCLICK -> leftClick()
                     MouseEventType.RIGHTCLICK -> rightClick()
-                    MouseEventType.WHEELCLICK -> TODO()
-                    MouseEventType.DRAG -> TODO()
+                    MouseEventType.WHEELCLICK -> notDefine()
+                    MouseEventType.DRAG -> notDefine()
                     MouseEventType.WHEELMOVE -> wheelMove()
-                    MouseEventType.TOUCHWALL -> TODO()
-                    MouseEventType.SENDMOUSE -> TODO()
-                    MouseEventType.CLOSEINVISIBLEWINDOW -> TODO()
-                    null -> TODO()
+                    MouseEventType.TOUCHWALL -> notDefine()
+                    MouseEventType.SENDMOUSE -> notDefine()
+                    MouseEventType.CLOSEINVISIBLEWINDOW -> notDefine()
+                    null -> notDefine()
                 }
             }
 
-            DataType.KEYBOARD -> TODO()
-            DataType.WALLTYPE -> wallType =
-                mapper.treeToValue(receiveData.data, WallType::class.java)
+            DataType.KEYBOARD -> notDefine()
+            DataType.WALLTYPE -> setWallType(mapper.treeToValue(receiveData.data, WallType::class.java))
 
-            DataType.SYSTEMEXIT -> TODO()
-            null -> TODO()
+            DataType.SYSTEMEXIT -> notDefine()
+            null -> notDefine()
         }
     }
+
+    fun notDefine(){
+        return
+    }
+
+    fun setWallType(wallType:WallType){
+    when(wallType){
+        WallType.NORTH -> this.wallType = WallType.SOUTH
+        WallType.SOUTH -> this.wallType = WallType.NORTH
+        WallType.WEST -> this.wallType = WallType.EAST
+        WallType.EAST -> this.wallType = WallType.WEST
+        }
+    }
+
 
     private fun move() {
         val screenSize = AccessibilityStateStore.getScreenSize()
@@ -95,12 +132,12 @@ class MouseCommandProcessor {
 
                 WallType.NORTH -> {
                     x = mouseData.mouseX.coerceIn(0, screenWidthSize - 1)
-                    y = screenHeightSize - 1
+                    y = 0
                 }
 
                 WallType.SOUTH -> {
                     x = mouseData.mouseX.coerceIn(0, screenWidthSize - 1)
-                    y = 0
+                    y = screenHeightSize - 1
                 }
 
                 WallType.EAST -> {
@@ -110,7 +147,14 @@ class MouseCommandProcessor {
             }
         }
         if (checkTouchWall()) {
+            ignoreMoveUntil =
+                SystemClock.elapsedRealtime() + returnIgnoreMillis
             MouseAccessibilityService.instance?.hideCursor()
+            mouseData.setMouseEventType(MouseEventType.TOUCHWALL)
+            mouseData.mouseX = x
+            mouseData.mouseY = y
+            callSendData.callSendData(DataType.MOUSE,mouseData)
+
         } else {
             MouseAccessibilityService.instance?.draw(x, y)
         }
@@ -124,12 +168,15 @@ class MouseCommandProcessor {
 
 
     fun checkTouchWall(): Boolean {
-        if (justGetMouse) return false
         when (wallType) {
             WallType.NORTH -> {
                 return if (y < wallRange) {
-                    haveMouse = false
-                    true
+                    if(!justGetMouse) {
+                        haveMouse = false
+                        true
+                    }else{
+                        false
+                    }
                 } else {
                     justGetMouse = false
                     false
@@ -137,7 +184,7 @@ class MouseCommandProcessor {
             }
 
             WallType.SOUTH -> {
-                return if (y > screenHeightSize - wallRange) {
+                return if (y > screenHeightSize - wallRange && !justGetMouse) {
                     haveMouse = false
                     true
                 } else {
@@ -147,7 +194,7 @@ class MouseCommandProcessor {
             }
 
             WallType.WEST -> {
-                return if (x > screenWidthSize - wallRange) {
+                return if (x > screenWidthSize - wallRange && !justGetMouse) {
                     haveMouse = false
                     true
                 } else {
@@ -157,7 +204,7 @@ class MouseCommandProcessor {
             }
 
             WallType.EAST -> {
-                return if (x < wallRange) {
+                return if (x < wallRange && !justGetMouse) {
                     haveMouse = false
                     true
                 } else {
@@ -169,7 +216,32 @@ class MouseCommandProcessor {
     }
 
     private fun leftClick() {
-        if (mouseData.isPressed) MouseAccessibilityService.instance?.tap(x, y)
+        val CHENGE_EO_SWIPE_RANGE = 5
+        if (mouseData.isPressed) {
+            tapTime = SystemClock.elapsedRealtime()
+            leftClicked = true
+            tapX = x
+            tapY = y
+        }
+        if(!mouseData.isPressed) {
+            if(abs(tapX - x) <= CHENGE_EO_SWIPE_RANGE && abs(tapY - y) <= CHENGE_EO_SWIPE_RANGE){
+                MouseAccessibilityService.instance?.tap(x, y)
+                leftClicked = false
+            }else{
+                MouseAccessibilityService.instance?.swipe(tapX,tapY,x, y)
+                leftClicked = false
+            }
+        }
+    }
+
+    fun draw(){
+        x += mouseData.dx
+        if (x >= screenWidthSize) x = screenWidthSize - 1
+        if (x < 0) x = 0
+        y += mouseData.dy
+        if (y >= screenHeightSize) y = screenHeightSize - 1
+        if (y < 0) y = 0
+        MouseAccessibilityService.instance?.draw(x, y)
     }
 
     private fun rightClick() {
@@ -189,4 +261,7 @@ class MouseCommandProcessor {
         service.scroll(x = x, y = y, deltaY = distance, duration = 150L)
     }
 
+    fun errorOccurred(){
+        MouseAccessibilityService.instance?.hideCursor()
+    }
 }

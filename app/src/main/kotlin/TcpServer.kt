@@ -17,6 +17,17 @@ class TcpServer(
     private val mapper = ObjectMapper()
     private var socket: Socket? = null
     private var server: ServerSocket? = null
+    var connecting = false;
+
+    private val receiveThread  = Thread{
+        while(connecting){
+            receive()
+        }
+    }
+
+    fun startReceiveThread(){
+        receiveThread.start()
+    }
 
     fun makeServer() {
         try {
@@ -28,17 +39,11 @@ class TcpServer(
             socket = newSocket
             println("接続されました")
 
-            inData = BufferedReader(
-                InputStreamReader(newSocket.getInputStream())
-            )
+            inData = BufferedReader(InputStreamReader(newSocket.getInputStream()))
             out = PrintWriter(newSocket.getOutputStream(), true)
         } catch (e: IOException) {
             close()
         }
-    }
-
-    fun loop() {
-        receive()
     }
 
     private fun receive() {
@@ -49,7 +54,8 @@ class TcpServer(
                 listener.receiveData(data)
             }
         } catch (e: IOException) {
-            e.printStackTrace()
+            listener.errorOccurred()
+            close()
         }
     }
 
@@ -57,19 +63,22 @@ class TcpServer(
         return mapper.readValue(json, InputConvertedData::class.java)
     }
 
-    fun send(msg: String) {
+    fun send(msg: String?) {
         out?.println(msg)
+        println("soushin:"+ msg)
     }
 
     fun close() {
+        connecting = false
+
+        socket?.close()
         inData?.close()
         out?.close()
-        socket?.close()
         server?.close()
 
+        socket = null
         inData = null
         out = null
-        socket = null
         server = null
     }
 }

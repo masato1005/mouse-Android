@@ -131,10 +131,8 @@ class MouseAccessibilityService : AccessibilityService(), MouseActionExecutor {
                 params
             )
         }
-
         return true
     }
-
 
     fun hideCursor() {
         mainHandler.post {
@@ -156,6 +154,28 @@ class MouseAccessibilityService : AccessibilityService(), MouseActionExecutor {
         return accepted
     }
 
+    fun swipe(startX:Int, startY:Int, endX:Int, endY:Int):Boolean{
+        val duration = 500L
+        val screenSize = AccessibilityStateStore.getScreenSize() ?: return false
+
+        val path = Path().apply {
+            moveTo(startX.toFloat(), startY.toFloat())
+            lineTo(endX.toFloat(), endY.toFloat())
+        }
+
+        val gesture = GestureDescription.Builder()
+            .addStroke(
+                GestureDescription.StrokeDescription(
+                    path,
+                    0,
+                    duration
+                )
+            )
+            .build()
+        return dispatchGesture(gesture, null, null)
+
+    }
+
     override fun longTap(x: Int, y: Int): Boolean {
         val path = Path().apply {
             moveTo(x.toFloat(), y.toFloat())
@@ -165,7 +185,6 @@ class MouseAccessibilityService : AccessibilityService(), MouseActionExecutor {
         val accepted = dispatchGesture(gesture, null, null)
         return accepted
     }
-
 
     override fun scroll(x: Int, y: Int, deltaY: Int, duration: Long): Boolean {
         val screenSize = AccessibilityStateStore.getScreenSize() ?: return false
@@ -191,13 +210,13 @@ class MouseAccessibilityService : AccessibilityService(), MouseActionExecutor {
 }
 
 
-fun Context.isAccessibilityServiceEnabled(
-    serviceClass: Class<out AccessibilityService>
-): Boolean {
-    val manager = getSystemService(AccessibilityManager::class.java)
-    val targetService = ComponentName(this, serviceClass)
+    fun Context.isAccessibilityServiceEnabled(
+         serviceClass: Class<out AccessibilityService>
+    ): Boolean {
+        val manager = getSystemService(AccessibilityManager::class.java)
+        val targetService = ComponentName(this, serviceClass)
 
-    return manager
+        return manager
         .getEnabledAccessibilityServiceList(
             AccessibilityServiceInfo.FEEDBACK_ALL_MASK
         )

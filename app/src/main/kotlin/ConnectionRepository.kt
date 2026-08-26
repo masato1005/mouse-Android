@@ -6,6 +6,7 @@ class ConnectionRepository(private val listener: NetworkListener) {
     private var tcp: TcpServer? = null
 
     fun connect() {
+        println("connect2")
         closeSearch()
 
         val udpServer = UdpServer(portNumber)
@@ -15,14 +16,17 @@ class ConnectionRepository(private val listener: NetworkListener) {
         if (udp != null) {
             val tcpServer = TcpServer(portNumber, listener)
             tcp = tcpServer
-            tcpServer.makeServer()
+            tcp?.makeServer()
+            tcp?.connecting = true
+            tcp?.startReceiveThread()
             listener.successConnect()
         }
     }
 
-    fun loop() {
-        tcp?.loop()
+    fun sendData(sendData: String?){
+        tcp?.send(sendData)
     }
+
 
 
     fun closeSearch() {

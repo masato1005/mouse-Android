@@ -5,7 +5,9 @@
 
     <application
         android:allowBackup="true"
+        android:icon="@drawable/app_icon_cursor_bridge_vector"
         android:label="Mouse Android"
+        android:roundIcon="@drawable/app_icon_cursor_bridge_vector"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity
