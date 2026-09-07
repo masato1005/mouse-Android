@@ -75,22 +75,22 @@ class MouseCommandProcessor(val callSendData: CallSendData) {
                     }
 
 
-                    MouseEventType.LEFTCLICK -> leftClick()
-                    MouseEventType.RIGHTCLICK -> rightClick()
-                    MouseEventType.WHEELCLICK -> notDefine()
+                    MouseEventType.LEFT_CLICK -> leftClick()
+                    MouseEventType.RIGHT_CLICK -> rightClick()
+                    MouseEventType.WHEEL_CLICK -> notDefine()
                     MouseEventType.DRAG -> notDefine()
-                    MouseEventType.WHEELMOVE -> wheelMove()
-                    MouseEventType.TOUCHWALL -> notDefine()
-                    MouseEventType.SENDMOUSE -> notDefine()
-                    MouseEventType.CLOSEINVISIBLEWINDOW -> notDefine()
+                    MouseEventType.WHEEL_MOVE -> wheelMove()
+                    MouseEventType.TOUCH_WALL -> notDefine()
+                    MouseEventType.SEND_MOUSE -> notDefine()
+                    MouseEventType.CLOSE_INVISIBLE_WINDOW -> notDefine()
                     null -> notDefine()
                 }
             }
 
             DataType.KEYBOARD -> notDefine()
-            DataType.WALLTYPE -> setWallType(mapper.treeToValue(receiveData.data, WallType::class.java))
+            DataType.WALL_TYPE -> setWallType(mapper.treeToValue(receiveData.data, WallType::class.java))
 
-            DataType.SYSTEMEXIT -> notDefine()
+            DataType.SYSTEM_EXIT -> notDefine()
             null -> notDefine()
         }
     }
@@ -150,7 +150,7 @@ class MouseCommandProcessor(val callSendData: CallSendData) {
             ignoreMoveUntil =
                 SystemClock.elapsedRealtime() + returnIgnoreMillis
             MouseAccessibilityService.instance?.hideCursor()
-            mouseData.setMouseEventType(MouseEventType.TOUCHWALL)
+            mouseData.setMouseEventType(MouseEventType.TOUCH_WALL)
             mouseData.mouseX = x
             mouseData.mouseY = y
             callSendData.callSendData(DataType.MOUSE,mouseData)

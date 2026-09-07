@@ -2,12 +2,12 @@ package EventType;
 
 public enum MouseEventType {
     MOVE,
-    LEFTCLICK,
-    RIGHTCLICK,
-    WHEELCLICK,
+    LEFT_CLICK,
+    RIGHT_CLICK,
+    WHEEL_CLICK,
     DRAG,
-    WHEELMOVE,
-    TOUCHWALL,
-    SENDMOUSE,
-    CLOSEINVISIBLEWINDOW
+    WHEEL_MOVE,
+    TOUCH_WALL,
+    SEND_MOUSE,
+    CLOSE_INVISIBLE_WINDOW
 }

@@ -57,7 +57,7 @@ class MouseViewModel() : ViewModel(), UIListener, NetworkListener, CallSendData 
 
             SUCCESS -> {
                 networkThread.addTask {
-                    callSendData(DataType.SYSTEMEXIT,null)
+                    callSendData(DataType.SYSTEM_EXIT,null)
                     connectionRepository.closeSearch()}
                 changeConnectStatus(IDLING)
             }

@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
-import androidx.core.content.ContextCompat
 
 class MainActivity : ComponentActivity() {
     private val viewModel: MouseViewModel by viewModels()
@@ -27,6 +26,10 @@ class MainActivity : ComponentActivity() {
         val enabled = isAccessibilityServiceEnabled(MouseAccessibilityService::class.java)
 
         viewModel.refreshAccessibilityState(enabled)
+        if (enabled) {
+            return
+        }
+
         AlertDialog.Builder(this)
             .setTitle("ユーザー補助サービスについて")
             .setMessage(
@@ -36,11 +39,7 @@ class MainActivity : ComponentActivity() {
             )
             .setNegativeButton("キャンセル", null)
             .setPositiveButton("設定を開く") { _, _ ->
-                startActivity(
-                    Intent(
-                        Settings.ACTION_ACCESSIBILITY_SETTINGS
-                    )
-                )
+                openAccessibilitySettings()
             }
             .show()
     }

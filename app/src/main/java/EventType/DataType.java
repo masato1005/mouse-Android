@@ -3,7 +3,7 @@ package EventType;
 public enum DataType {
     MOUSE,
     KEYBOARD,
-    WALLTYPE,
-    SYSTEMEXIT,
+    WALL_TYPE,
+    SYSTEM_EXIT,
 
 }
